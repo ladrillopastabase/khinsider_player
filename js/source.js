@@ -54,7 +54,7 @@ function call(cmd, args, timeout = 25000) {
   return new Promise((resolve, reject) => {
     if (!bridgeWin || bridgeWin.closed) { setConnected(false); return reject(new Error('Sin conexión con khinsider')); }
     const id = ++reqId;
-    const timer = setTimeout(() => { pending.delete(id); reject(new Error('La pestaña de khinsider no responde. Si estás en el móvil, vuelve a ella un momento o usa «Preparar y abrir».')); }, timeout);
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error('La pestaña de khinsider no responde. Si estás en el móvil, vuelve a ella un momento.')); }, timeout);
     pending.set(id, { resolve, reject, timer });
     bridgeWin.postMessage({ kh: 1, type: 'req', id, cmd, args }, KH_ORIGIN);
   });

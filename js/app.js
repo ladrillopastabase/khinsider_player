@@ -167,12 +167,12 @@ function mobileSteps(kind, dark) {
     h('li', null, 'En Safari toca ', h('b', null, 'Compartir'), ' (el cuadrado con la flecha) → ', h('b', null, 'Añadir marcador'), ' → ', h('b', null, 'Guardar'), '.'),
     h('li', null, 'Abre los ', h('b', null, 'Marcadores'), ' (el libro) → ', h('b', null, 'Editar'), ' → toca el marcador nuevo. Ponle de nombre ', h('b', null, 'KH Player'), ', borra la dirección y pega el código. Toca ', h('b', null, 'OK'), '.'),
     h('li', null, 'Toca ', h('b', null, 'Abrir khinsider'), '. En esa pestaña abre los Marcadores y toca ', h('b', null, 'KH Player'), '.'),
-    h('li', null, 'En un top, una búsqueda o un álbum toca ', h('b', null, 'Preparar y abrir'), '. La app recibe la música lista para escuchar. Mantén la pantalla encendida mientras se prepara.')
+    h('li', null, 'En un top, una búsqueda o un álbum toca ', h('b', null, 'Abrir en el reproductor'), '.')
   ] : [
     h('li', null, 'Toca ', h('b', null, 'Copiar código del marcador'), '.'),
     h('li', null, 'En Chrome toca ', h('b', null, '⋮'), ' → la estrella ', h('b', null, '☆'), ' para guardar esta página. Luego ', h('b', null, '⋮ → Marcadores'), ', mantén pulsado el marcador nuevo → ', h('b', null, 'Editar'), '. Nombre: ', h('b', null, 'KH Player'), '; en la dirección borra todo y pega el código.'),
     h('li', null, 'Toca ', h('b', null, 'Abrir khinsider'), '. En esa pestaña toca la barra de direcciones, escribe ', h('b', null, 'KH Player'), ' y toca la sugerencia con la estrella (no la búsqueda de Google).'),
-    h('li', null, 'En un top, una búsqueda o un álbum toca ', h('b', null, 'Preparar y abrir'), '. La app recibe la música lista para escuchar. Mantén la pantalla encendida mientras se prepara.')
+    h('li', null, 'En un top, una búsqueda o un álbum toca ', h('b', null, 'Abrir en el reproductor'), '.')
   ];
   return [h('ol', null, steps), h('div', { class: 'row-btns' }, copyBtn, openBtn)];
 }
@@ -541,21 +541,13 @@ async function addSelectionByUrl() {
   openTop({ title: '', url: St.safeUrl(url) });
 }
 
-function albumReady(id) {
-  const al = S().albums[id];
-  return !!(al && al.trackIds.some(t => S().tracks[t] && S().tracks[t].src));
-}
-const readyCount = sel => sel.items.filter(albumReady).length;
 views.sel = async (id) => {
   const sel = S().selections.find(s => s.id === id);
   if (!sel) return emptyBox('grid', 'No encontrada', 'Esta selección ya no existe.');
   St.addRecent('selection', id); St.persist();
   const v = h('div', { class: 'view' },
     h('div', { class: 'view-head' }, h('h1', { style: 'margin:0;flex:1' }, sel.title)),
-    h('p', { class: 'muted small' }, sel.items.length + ' álbumes · ' + readyCount(sel) + ' listos para escuchar · actualizado ' + new Date(sel.fetchedAt).toLocaleString()),
-    !canFetch() && readyCount(sel) < sel.items.length && sel.url ? h('div', { class: 'notice' },
-      h('div', { class: 'grow' }, 'Para escuchar el resto, abre esta lista en khinsider, toca el marcador y luego «Preparar y abrir».'),
-      h('button', { class: 'btn small', onclick: () => openKhinsider(sel.url) }, icon('ext'), 'Abrir en khinsider')) : null,
+    h('p', { class: 'muted small' }, sel.items.length + ' álbumes · actualizado ' + new Date(sel.fetchedAt).toLocaleString()),
     h('div', { class: 'row-btns', style: 'margin-bottom:22px' },
       h('button', { class: 'btn', onclick: () => sel.items[0] && playAlbum(sel.items[0]) }, icon('play'), 'Reproducir el primero'),
       canFetch() && sel.url ? h('button', { class: 'btn soft', onclick: async () => { try { await loadSelection(sel.url, sel.title); toast('Actualizado'); } catch (e) { toast(e.message); } } }, icon('refresh'), 'Actualizar') : null,
@@ -771,7 +763,6 @@ views.settings = () => {
       h('p', null, 'downloads.khinsider.com está protegido por Cloudflare y no permite que otras webs lean sus páginas. Por eso la app no puede pedirle datos directamente desde GitHub Pages.'),
       h('p', null, 'La solución es un marcador (bookmarklet). Lo pulsas en una pestaña de khinsider abierta en tu navegador y esa pestaña hace de puente: lee las páginas con tu propia sesión y le pasa los datos a la app. Los MP3 se reproducen directo desde los servidores de khinsider.'),
       h('p', null, 'Estado: ', h('b', null, isConnected() ? 'conectado' : 'sin conexión')),
-      h('p', null, 'Con la pestaña conectada, la app busca y abre álbumes en vivo. En el móvil los navegadores pausan las pestañas de fondo, así que ahí lo fiable es «Preparar y abrir»: el marcador prepara los álbumes con su audio y los manda a la app de una vez.'),
       IS_STANDALONE ? standaloneNotice() : null,
       [['desktop', 'Computador (Chrome, Edge, Firefox, Safari)'], ['ios', 'iPhone / iPad (Safari)'], ['android', 'Android (Chrome)']].map(([k, label]) =>
         h('details', { class: 'steps', open: k === PLATFORM ? true : null }, h('summary', null, label), ...connectSteps(false, k)))),

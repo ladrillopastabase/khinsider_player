@@ -182,35 +182,6 @@ async function routeFake(ctx) {
   ok(true, 'lista importada por enlace');
   ok(await app.evaluate(() => !document.querySelector('img[src^="javascript"]')), 'descarta URLs no seguras');
 
-  // «Preparar y abrir» desde una lista de khinsider (flujo para móvil)
-  console.log('Preparar y abrir una lista');
-  const c2 = await browser.newContext({ viewport: { width: 1200, height: 800 } });
-  await routeFake(c2);
-  const app2 = await c2.newPage();
-  app2.on('pageerror', e => errors.push(e.message));
-  await app2.goto(APP + '#/home');
-  await app2.waitForSelector('.hero');
-  const kh2 = await c2.newPage();
-  kh2.on('pageerror', e => errors.push(e.message));
-  await kh2.goto('https://downloads.khinsider.com/top40');
-  await kh2.evaluate(code => { (0, eval)(decodeURIComponent(code.slice('javascript:'.length))); }, bm);
-  await kh2.locator('[data-a=count]').selectOption('3');
-  await kh2.locator('[data-a=pack]').click();
-  await kh2.locator('[data-a=send]:not([disabled])', { hasText: '3 álbumes' }).waitFor({ timeout: 20000 });
-  ok(true, 'el marcador prepara 3 álbumes con su audio');
-  if (shots) await kh2.screenshot({ path: shots + '/9-pack.png' });
-  // Pestañas sin relación: el navegador abre la app en una pestaña nueva con los datos.
-  const [app3] = await Promise.all([c2.waitForEvent('page'), kh2.locator('[data-a=send]').click()]);
-  app3.on('pageerror', e => errors.push(e.message));
-  await app3.waitForSelector('h1:has-text("Top 40 Most Downloaded")', { timeout: 10000 });
-  ok(/#\/sel\//.test(app3.url()), 'datos comprimidos en el enlace (' + app3.url().slice(0, 60) + '…)');
-  ok(await app3.locator('p:has-text("3 listos para escuchar")').count() === 1, 'la app recibe los 3 álbumes listos');
-  if (shots) await app3.screenshot({ path: shots + '/9b-received.png' });
-  await app3.waitForTimeout(600);
-  const srcs = await app3.evaluate(() => Object.values(JSON.parse(localStorage.getItem('khplayer:v1')).tracks).filter(t => t.src).length);
-  ok(srcs === 12, 'las 12 canciones tienen audio (' + srcs + ')');
-  await c2.close();
-
   // Móvil
   console.log('Móvil');
   const m = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
