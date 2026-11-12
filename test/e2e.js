@@ -16,7 +16,7 @@ async function routeFake(ctx) {
   await ctx.route('https://downloads.khinsider.com/**', route => {
     const u = new URL(route.request().url());
     let body = read('list.html');
-    if (/^\/game-soundtracks\/album\/[^/]+$/.test(u.pathname)) body = read('album.html');
+    if (/^\/game-soundtracks\/album\/[^/]+$/.test(u.pathname)) body = read('album.html').toString().replace(/super-test-game/g, u.pathname.split('/').pop());
     else if (/\.mp3$/.test(u.pathname)) body = read('track.html').toString().replace(/1-01\.%20Main%20Theme/g, decodeURIComponent(u.pathname.split('/').pop()).replace(/\.mp3$/, '').replace(/ /g, '%20'));
     route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body });
   });
@@ -90,7 +90,8 @@ async function routeFake(ctx) {
   await app.fill('[data-search-form] input', 'zelda');
   await app.press('[data-search-form] input', 'Enter');
   await app.waitForSelector('section:has-text("En khinsider") .card', { timeout: 8000 });
-  ok(await app.locator('section:has-text("En khinsider") .card').count() === 3, 'resultados desde khinsider');
+  const nres = await app.locator('section:has-text("En khinsider") .card').count();
+  ok(nres === 3, 'resultados desde khinsider (' + nres + ')');
 
   // Álbum
   console.log('Álbum y reproducción');
@@ -181,6 +182,35 @@ async function routeFake(ctx) {
   ok(true, 'lista importada por enlace');
   ok(await app.evaluate(() => !document.querySelector('img[src^="javascript"]')), 'descarta URLs no seguras');
 
+  // «Preparar y abrir» desde una lista de khinsider (flujo para móvil)
+  console.log('Preparar y abrir una lista');
+  const c2 = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+  await routeFake(c2);
+  const app2 = await c2.newPage();
+  app2.on('pageerror', e => errors.push(e.message));
+  await app2.goto(APP + '#/home');
+  await app2.waitForSelector('.hero');
+  const kh2 = await c2.newPage();
+  kh2.on('pageerror', e => errors.push(e.message));
+  await kh2.goto('https://downloads.khinsider.com/top40');
+  await kh2.evaluate(code => { (0, eval)(decodeURIComponent(code.slice('javascript:'.length))); }, bm);
+  await kh2.locator('[data-a=count]').selectOption('3');
+  await kh2.locator('[data-a=pack]').click();
+  await kh2.locator('[data-a=send]:not([disabled])', { hasText: '3 álbumes' }).waitFor({ timeout: 20000 });
+  ok(true, 'el marcador prepara 3 álbumes con su audio');
+  if (shots) await kh2.screenshot({ path: shots + '/9-pack.png' });
+  // Pestañas sin relación: el navegador abre la app en una pestaña nueva con los datos.
+  const [app3] = await Promise.all([c2.waitForEvent('page'), kh2.locator('[data-a=send]').click()]);
+  app3.on('pageerror', e => errors.push(e.message));
+  await app3.waitForSelector('h1:has-text("Top 40 Most Downloaded")', { timeout: 10000 });
+  ok(/#\/sel\//.test(app3.url()), 'datos comprimidos en el enlace (' + app3.url().slice(0, 60) + '…)');
+  ok(await app3.locator('p:has-text("3 listos para escuchar")').count() === 1, 'la app recibe los 3 álbumes listos');
+  if (shots) await app3.screenshot({ path: shots + '/9b-received.png' });
+  await app3.waitForTimeout(600);
+  const srcs = await app3.evaluate(() => Object.values(JSON.parse(localStorage.getItem('khplayer:v1')).tracks).filter(t => t.src).length);
+  ok(srcs === 12, 'las 12 canciones tienen audio (' + srcs + ')');
+  await c2.close();
+
   // Móvil
   console.log('Móvil');
   const m = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
@@ -192,6 +222,20 @@ async function routeFake(ctx) {
   ok(await mp.locator('.tabbar').isVisible(), 'barra de pestañas en móvil');
   const overflow = await mp.evaluate(() => document.documentElement.scrollWidth > innerWidth || document.querySelector('#main').scrollWidth > innerWidth);
   ok(!overflow, 'sin desbordamiento horizontal');
+  ok(await mp.locator('.hero li:has-text("Compartir")').count() === 0 && await mp.locator('.hero li:has-text("⋮")').count() === 0 && await mp.locator('.hero .bookmarklet').count() === 1, 'pasos de computador en navegador genérico');
+  const ip = await browser.newContext({ ...require('playwright').devices['iPhone 13'] });
+  await routeFake(ip);
+  const ipp = await ip.newPage();
+  await ipp.goto(APP + '#/home');
+  await ipp.waitForSelector('.hero');
+  ok(await ipp.locator('.hero li:has-text("Compartir")').count() === 1, 'pasos específicos para iPhone');
+  if (shots) await ipp.screenshot({ path: shots + '/10-iphone.png' });
+  const an = await browser.newContext({ ...require('playwright').devices['Pixel 7'] });
+  await routeFake(an);
+  const anp = await an.newPage();
+  await anp.goto(APP + '#/home');
+  await anp.waitForSelector('.hero');
+  ok(await anp.locator('.hero li:has-text("estrella")').count() >= 1, 'pasos específicos para Android');
   if (shots) await mp.screenshot({ path: shots + '/8-mobile.png' });
 
   ok(errors.length === 0, 'sin errores de JavaScript' + (errors.length ? ': ' + errors.join(' | ') : ''));

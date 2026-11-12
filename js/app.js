@@ -153,7 +153,30 @@ async function copyBookmarklet() {
   catch { await ask('Copia este código como URL de un marcador', href, { multiline: true, ok: 'Listo' }); }
 }
 
-function connectSteps(dark = false) {
+const UA = navigator.userAgent;
+const IS_IOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/i.test(UA);
+const IS_STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const PLATFORM = IS_IOS ? 'ios' : IS_ANDROID ? 'android' : 'desktop';
+
+function mobileSteps(kind, dark) {
+  const copyBtn = h('button', { class: 'btn' + (dark ? '' : ''), onclick: copyBookmarklet }, icon('link'), 'Copiar código del marcador');
+  const openBtn = h('button', { class: 'btn soft', onclick: () => openKhinsider('/') }, icon('ext'), 'Abrir khinsider');
+  const steps = kind === 'ios' ? [
+    h('li', null, 'Toca ', h('b', null, 'Copiar código del marcador'), '.'),
+    h('li', null, 'En Safari toca ', h('b', null, 'Compartir'), ' (el cuadrado con la flecha) → ', h('b', null, 'Añadir marcador'), ' → ', h('b', null, 'Guardar'), '.'),
+    h('li', null, 'Abre los ', h('b', null, 'Marcadores'), ' (el libro) → ', h('b', null, 'Editar'), ' → toca el marcador nuevo. Ponle de nombre ', h('b', null, 'KH Player'), ', borra la dirección y pega el código. Toca ', h('b', null, 'OK'), '.'),
+    h('li', null, 'Toca ', h('b', null, 'Abrir khinsider'), '. En esa pestaña abre los Marcadores y toca ', h('b', null, 'KH Player'), '.'),
+    h('li', null, 'En un top, una búsqueda o un álbum toca ', h('b', null, 'Preparar y abrir'), '. La app recibe la música lista para escuchar. Mantén la pantalla encendida mientras se prepara.')
+  ] : [
+    h('li', null, 'Toca ', h('b', null, 'Copiar código del marcador'), '.'),
+    h('li', null, 'En Chrome toca ', h('b', null, '⋮'), ' → la estrella ', h('b', null, '☆'), ' para guardar esta página. Luego ', h('b', null, '⋮ → Marcadores'), ', mantén pulsado el marcador nuevo → ', h('b', null, 'Editar'), '. Nombre: ', h('b', null, 'KH Player'), '; en la dirección borra todo y pega el código.'),
+    h('li', null, 'Toca ', h('b', null, 'Abrir khinsider'), '. En esa pestaña toca la barra de direcciones, escribe ', h('b', null, 'KH Player'), ' y toca la sugerencia con la estrella (no la búsqueda de Google).'),
+    h('li', null, 'En un top, una búsqueda o un álbum toca ', h('b', null, 'Preparar y abrir'), '. La app recibe la música lista para escuchar. Mantén la pantalla encendida mientras se prepara.')
+  ];
+  return [h('ol', null, steps), h('div', { class: 'row-btns' }, copyBtn, openBtn)];
+}
+function desktopSteps(dark) {
   return [
     h('ol', null,
       h('li', null, 'Arrastra este botón a tu barra de marcadores: ', bookmarkletLink()),
@@ -161,9 +184,19 @@ function connectSteps(dark = false) {
       h('li', null, 'En esa pestaña pulsa el marcador ', h('b', null, 'KH Player'), '. La app se conecta y ya puedes buscar, ver tops y escuchar desde aquí.')),
     h('div', { class: 'row-btns' },
       h('button', { class: 'btn', onclick: () => openKhinsider('/') }, icon('ext'), 'Abrir khinsider'),
-      h('button', { class: 'btn soft', onclick: copyBookmarklet }, 'Copiar código (móvil)'),
+      h('button', { class: 'btn soft', onclick: copyBookmarklet }, 'Copiar código'),
       h('a', { class: dark ? 'btn soft' : 'btn ghost', href: '#/settings' }, '¿Cómo funciona?'))
   ];
+}
+function connectSteps(dark = false, kind = PLATFORM) {
+  return kind === 'desktop' ? desktopSteps(dark) : mobileSteps(kind, dark);
+}
+function standaloneNotice() {
+  return h('div', { class: 'notice' }, h('div', { class: 'grow' },
+    h('b', null, 'Abriste KH Player desde la pantalla de inicio. '),
+    'Así no puede recibir música de khinsider, porque queda separada del navegador. Para conectar o recibir álbumes, ábrela en ' + (IS_IOS ? 'Safari' : 'Chrome') + ': ',
+    h('code', null, appUrl())),
+    h('button', { class: 'btn small', onclick: async () => { try { await navigator.clipboard.writeText(appUrl()); toast('Enlace copiado'); } catch { toast(appUrl()); } } }, 'Copiar enlace'));
 }
 function connectModal() {
   modal((box, close) => {
@@ -450,6 +483,7 @@ let renderToken = 0;
 views.home = () => {
   const v = h('div', { class: 'view' }, h('h1', null, 'Inicio'));
   const hasData = Object.keys(S().stubs).length > 0;
+  if (IS_STANDALONE) add(v, standaloneNotice());
   if (!isConnected()) {
     if (!hasData) {
       add(v, h('div', { class: 'hero' },
@@ -507,13 +541,21 @@ async function addSelectionByUrl() {
   openTop({ title: '', url: St.safeUrl(url) });
 }
 
+function albumReady(id) {
+  const al = S().albums[id];
+  return !!(al && al.trackIds.some(t => S().tracks[t] && S().tracks[t].src));
+}
+const readyCount = sel => sel.items.filter(albumReady).length;
 views.sel = async (id) => {
   const sel = S().selections.find(s => s.id === id);
   if (!sel) return emptyBox('grid', 'No encontrada', 'Esta selección ya no existe.');
   St.addRecent('selection', id); St.persist();
   const v = h('div', { class: 'view' },
     h('div', { class: 'view-head' }, h('h1', { style: 'margin:0;flex:1' }, sel.title)),
-    h('p', { class: 'muted small' }, sel.items.length + ' álbumes · actualizado ' + new Date(sel.fetchedAt).toLocaleString()),
+    h('p', { class: 'muted small' }, sel.items.length + ' álbumes · ' + readyCount(sel) + ' listos para escuchar · actualizado ' + new Date(sel.fetchedAt).toLocaleString()),
+    !canFetch() && readyCount(sel) < sel.items.length && sel.url ? h('div', { class: 'notice' },
+      h('div', { class: 'grow' }, 'Para escuchar el resto, abre esta lista en khinsider, toca el marcador y luego «Preparar y abrir».'),
+      h('button', { class: 'btn small', onclick: () => openKhinsider(sel.url) }, icon('ext'), 'Abrir en khinsider')) : null,
     h('div', { class: 'row-btns', style: 'margin-bottom:22px' },
       h('button', { class: 'btn', onclick: () => sel.items[0] && playAlbum(sel.items[0]) }, icon('play'), 'Reproducir el primero'),
       canFetch() && sel.url ? h('button', { class: 'btn soft', onclick: async () => { try { await loadSelection(sel.url, sel.title); toast('Actualizado'); } catch (e) { toast(e.message); } } }, icon('refresh'), 'Actualizar') : null,
@@ -645,10 +687,11 @@ views.search = (_, token, params) => {
       remote.lastChild.remove?.();
       add(remote, items.length ? h('div', { class: 'grid' }, items.map(id => albumCard(id))) : h('p', { class: 'muted' }, 'Sin resultados en khinsider.'));
     };
-    add(remote, loadingRow('Buscando en khinsider…'));
     const cached = searchCache.get(q);
-    (cached ? Promise.resolve(cached) : api.search(q).then(r => { const ids = (r.items || []).map(St.upsertStub).filter(Boolean).map(s => s.id); searchCache.set(q, ids); emit('stubs-silent'); return ids; }))
-      .then(ids => { if (token === renderToken) fill(ids); })
+    if (cached) { add(remote, h('div')); fill(cached); }
+    else add(remote, loadingRow('Buscando en khinsider…'));
+    (cached ? Promise.resolve(null) : api.search(q).then(r => { const ids = (r.items || []).map(St.upsertStub).filter(Boolean).map(s => s.id); searchCache.set(q, ids); emit('stubs-silent'); return ids; }))
+      .then(ids => { if (ids && token === renderToken) fill(ids); })
       .catch(e => { if (token === renderToken) { remote.lastChild.remove(); add(remote, h('p', { class: 'muted' }, 'Error al buscar: ' + e.message)); } });
   }
   if (localAlbums.length) add(v, h('section', { class: 'section' }, h('div', { class: 'section-head' }, h('h2', null, 'En tu biblioteca y vistos')), h('div', { class: 'grid' }, localAlbums.map(id => albumCard(id)))));
@@ -728,8 +771,10 @@ views.settings = () => {
       h('p', null, 'downloads.khinsider.com está protegido por Cloudflare y no permite que otras webs lean sus páginas. Por eso la app no puede pedirle datos directamente desde GitHub Pages.'),
       h('p', null, 'La solución es un marcador (bookmarklet). Lo pulsas en una pestaña de khinsider abierta en tu navegador y esa pestaña hace de puente: lee las páginas con tu propia sesión y le pasa los datos a la app. Los MP3 se reproducen directo desde los servidores de khinsider.'),
       h('p', null, 'Estado: ', h('b', null, isConnected() ? 'conectado' : 'sin conexión')),
-      ...connectSteps(),
-      h('p', { class: 'small' }, 'En el móvil: copia el código, crea un marcador cualquiera y pega el código como su URL. En Chrome para Android, escribe el nombre del marcador en la barra de direcciones estando en khinsider y tócalo.')),
+      h('p', null, 'Con la pestaña conectada, la app busca y abre álbumes en vivo. En el móvil los navegadores pausan las pestañas de fondo, así que ahí lo fiable es «Preparar y abrir»: el marcador prepara los álbumes con su audio y los manda a la app de una vez.'),
+      IS_STANDALONE ? standaloneNotice() : null,
+      [['desktop', 'Computador (Chrome, Edge, Firefox, Safari)'], ['ios', 'iPhone / iPad (Safari)'], ['android', 'Android (Chrome)']].map(([k, label]) =>
+        h('details', { class: 'steps', open: k === PLATFORM ? true : null }, h('summary', null, label), ...connectSteps(false, k)))),
     h('div', { class: 'settings-card' }, h('h3', null, 'Proxy propio (opcional, avanzado)'),
       h('p', null, 'Si tienes un proxy CORS que khinsider no bloquee, la app puede usarlo cuando no hay pestaña conectada. Usa {url} donde va la dirección. Los proxies públicos suelen recibir el bloqueo de Cloudflare.'),
       proxy,
@@ -762,6 +807,7 @@ async function render() {
   const token = ++renderToken;
   let raw = location.hash.slice(1) || '/home';
   if (raw.startsWith('kh=')) return handleHashImport(raw.slice(3));
+  if (raw.startsWith('khz=')) return handleHashImport(raw.slice(4), true);
   if (raw === 'kh-connect') { history.replaceState(null, '', '#/home'); raw = '/home'; }
   const [path, qs] = raw.split('?');
   const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
@@ -792,10 +838,18 @@ function softRender() {
   requestAnimationFrame(() => { renderQueued = false; if (!document.activeElement || !document.activeElement.isContentEditable) render(); });
 }
 
-function handleHashImport(data) {
-  let payload = null;
-  try { payload = JSON.parse(decodeURIComponent(data)); } catch { }
+async function inflate(b64) {
+  const s = b64.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(s + '='.repeat((4 - s.length % 4) % 4));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Response(stream).text();
+}
+async function handleHashImport(data, compressed = false) {
   history.replaceState(null, '', '#/home');
+  let payload = null;
+  try { payload = JSON.parse(compressed ? await inflate(data) : decodeURIComponent(data)); }
+  catch (e) { console.warn(e); toast('No se pudieron leer los datos recibidos'); }
   if (!importPayload(payload)) render();
 }
 function importPayload(p) {
@@ -806,6 +860,20 @@ function importPayload(p) {
     emit('albums');
     toast('Álbum recibido: ' + al.title, { label: 'Guardar', fn: () => { if (!S().saved.includes(al.id)) saveAlbum(al.id); } });
     go('/album/' + enc(al.id));
+    return true;
+  }
+  if (p.type === 'bundle' && p.list && Array.isArray(p.albums)) {
+    const sel = St.upsertSelection(p.list, { pinned: true });
+    if (!sel) return false;
+    let n = 0;
+    p.albums.slice(0, 500).forEach(a => {
+      const thumb = a && typeof a.id === 'string' && S().stubs[a.id] && S().stubs[a.id].thumb;
+      const al = St.upsertAlbum(a);
+      if (al) { n++; if (!al.cover && thumb) al.cover = thumb; }
+    });
+    emit('albums');
+    toast(n + ' álbumes listos para escuchar');
+    go('/sel/' + sel.id);
     return true;
   }
   if (p.type === 'list' && p.list) {

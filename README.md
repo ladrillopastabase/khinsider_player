@@ -31,7 +31,17 @@ También puedes pulsar el marcador en cualquier página de khinsider (un álbum,
 
 Los MP3 se reproducen directamente desde los servidores de audio de khinsider. Lo que ya cargaste (álbumes guardados, playlists, bucles) sigue funcionando aunque cierres la pestaña puente.
 
-En el móvil usa **Copiar código**. Crea un marcador cualquiera y pega el código como su URL. En Chrome para Android, escribe el nombre del marcador en la barra de direcciones estando en khinsider y tócalo.
+### En el móvil
+
+Los navegadores del móvil pausan las pestañas que quedan de fondo, así que la conexión en vivo no es fiable ahí. Por eso el marcador tiene **Preparar y abrir**:
+
+1. En khinsider abre un top, una búsqueda o un álbum y toca el marcador.
+2. En un top o una búsqueda, elige cuántos álbumes preparar (5, 10, 20… o todos) y toca **Preparar y abrir**. El marcador obtiene cada álbum con los enlaces de audio de todas sus canciones. Mantén la pantalla encendida mientras termina.
+3. Toca **Abrir en el reproductor**. Todo llega a la app comprimido dentro del enlace, sin depender de que la pestaña de khinsider siga activa. Ya puedes escuchar, hacer playlists y bucles.
+
+La app muestra pasos específicos para crear el marcador en **iPhone (Safari)** y en **Android (Chrome)**. Los tres casos están en Ajustes.
+
+Usa la app en una pestaña normal del navegador. Si la abres desde un ícono en la pantalla de inicio en modo app, queda separada del navegador y no recibe los datos del marcador. Por eso el manifest usa `"display": "browser"` y la app avisa si detecta ese modo.
 
 ## Publicar en GitHub Pages
 

@@ -34,13 +34,18 @@ function load() {
   }
 }
 
+function flush() {
+  clearTimeout(saveTimer); saveTimer = null;
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) { console.warn('No se pudo guardar', e); }
+}
 export function persist() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) { console.warn('No se pudo guardar', e); }
-  }, 250);
+  saveTimer = setTimeout(flush, 250);
 }
+// En el móvil el navegador puede cerrar la pestaña sin avisar: guarda al ocultarse.
+addEventListener('pagehide', () => { if (saveTimer) flush(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) flush(); });
 
 export const S = () => state;
 export function on(fn) { listeners.add(fn); return () => listeners.delete(fn); }

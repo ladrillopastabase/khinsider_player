@@ -517,3 +517,10 @@ input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 
 @media (min-width: 861px) { .player .mini-prog { display: none; } }
 
 [data-ph]:empty::before { content: attr(data-ph); color: var(--text-3); }
+
+details.steps { border-top: 1px solid var(--line); padding: 10px 0; }
+details.steps summary { cursor: pointer; font-weight: 600; }
+details.steps ol { margin: 10px 0; padding-left: 22px; }
+details.steps li { margin: 6px 0; }
+.hero ol li b, details.steps li b { white-space: nowrap; }
+.notice code { font-size: 12px; word-break: break-all; }
