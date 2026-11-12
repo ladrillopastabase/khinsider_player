@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#fa2d48">
+  <meta name="description" content="Reproductor estilo Apple Music para la música de videojuegos de khinsider: playlists, bucles A-B, tops y búsqueda.">
+  <title>KH Player</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="js/parsers.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar" aria-label="Navegación">
+      <div class="brand"><img src="icons/icon.svg" alt="" width="28" height="28"><span>KH Player</span></div>
+      <form class="side-search" role="search" data-search-form>
+        <svg class="i"><use href="#i-search"/></svg>
+        <input type="search" name="q" placeholder="Buscar" autocomplete="off" aria-label="Buscar">
+      </form>
+      <nav class="side-nav" data-nav>
+        <a href="#/home" data-r="home"><svg class="i"><use href="#i-home"/></svg>Inicio</a>
+        <a href="#/browse" data-r="browse"><svg class="i"><use href="#i-grid"/></svg>Explorar</a>
+        <a href="#/search" data-r="search" class="only-mobile-hidden"><svg class="i"><use href="#i-search"/></svg>Buscar</a>
+        <h3>Biblioteca</h3>
+        <a href="#/library/recent" data-r="library/recent"><svg class="i"><use href="#i-clock"/></svg>Recientes</a>
+        <a href="#/library/albums" data-r="library/albums"><svg class="i"><use href="#i-album"/></svg>Álbumes</a>
+        <a href="#/library/songs" data-r="library/songs"><svg class="i"><use href="#i-note"/></svg>Canciones</a>
+        <a href="#/library/liked" data-r="library/liked"><svg class="i"><use href="#i-heart"/></svg>Favoritos</a>
+        <a href="#/library/loops" data-r="library/loops"><svg class="i"><use href="#i-loop"/></svg>Bucles</a>
+        <h3>Playlists <button class="icon-btn sm" data-act="new-playlist" title="Nueva playlist" aria-label="Nueva playlist"><svg class="i"><use href="#i-plus"/></svg></button></h3>
+        <div data-side-playlists></div>
+      </nav>
+      <div class="side-foot">
+        <button class="conn" data-act="connect"><span class="dot"></span><span data-conn-label>Sin conexión</span></button>
+        <a href="#/settings" class="icon-btn" title="Ajustes" aria-label="Ajustes"><svg class="i"><use href="#i-gear"/></svg></a>
+      </div>
+    </aside>
+
+    <main id="main" tabindex="-1"></main>
+
+    <aside class="panel" data-panel hidden>
+      <div class="panel-tabs" role="tablist">
+        <button role="tab" data-tab="queue">Cola</button>
+        <button role="tab" data-tab="loop">Bucle A‑B</button>
+        <button class="icon-btn" data-act="close-panel" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="panel-body" data-panel-body></div>
+    </aside>
+
+    <footer class="player" data-player>
+      <div class="pl-left">
+        <button class="pl-art" data-act="nowplaying" aria-label="Abrir reproducción"><img alt="" data-art><span class="art-ph" data-art-ph></span></button>
+        <div class="pl-meta">
+          <div class="pl-title" data-title>Nada en reproducción</div>
+          <a class="pl-sub" data-sub></a>
+        </div>
+        <button class="icon-btn heart" data-act="like-current" aria-label="Favorito"><svg class="i"><use href="#i-heart"/></svg></button>
+      </div>
+      <div class="pl-center">
+        <div class="pl-controls">
+          <button class="icon-btn" data-act="shuffle" title="Aleatorio (S)" aria-label="Aleatorio"><svg class="i"><use href="#i-shuffle"/></svg></button>
+          <button class="icon-btn" data-act="prev" title="Anterior" aria-label="Anterior"><svg class="i lg"><use href="#i-prev"/></svg></button>
+          <button class="icon-btn play" data-act="toggle" title="Reproducir (Espacio)" aria-label="Reproducir"><svg class="i xl"><use href="#i-play" data-playicon/></svg></button>
+          <button class="icon-btn" data-act="next" title="Siguiente" aria-label="Siguiente"><svg class="i lg"><use href="#i-next"/></svg></button>
+          <button class="icon-btn" data-act="repeat" title="Repetir (R)" aria-label="Repetir"><svg class="i"><use href="#i-repeat" data-repeaticon/></svg></button>
+        </div>
+        <div class="progress-row">
+          <span class="t" data-cur>0:00</span>
+          <div class="progress" data-progress></div>
+          <span class="t" data-dur>0:00</span>
+        </div>
+      </div>
+      <div class="pl-right">
+        <button class="icon-btn ab" data-act="panel-loop" title="Bucle A‑B" aria-label="Bucle A-B"><svg class="i"><use href="#i-loop"/></svg><span class="ab-badge" data-ab-badge></span></button>
+        <button class="icon-btn" data-act="panel-queue" title="Cola (Q)" aria-label="Cola"><svg class="i"><use href="#i-queue"/></svg></button>
+        <div class="vol"><svg class="i"><use href="#i-vol"/></svg><input type="range" min="0" max="1" step="0.01" data-vol aria-label="Volumen"></div>
+      </div>
+    </footer>
+
+    <nav class="tabbar" data-nav>
+      <a href="#/home" data-r="home"><svg class="i"><use href="#i-home"/></svg><span>Inicio</span></a>
+      <a href="#/browse" data-r="browse"><svg class="i"><use href="#i-grid"/></svg><span>Explorar</span></a>
+      <a href="#/library" data-r="library"><svg class="i"><use href="#i-album"/></svg><span>Biblioteca</span></a>
+      <a href="#/search" data-r="search"><svg class="i"><use href="#i-search"/></svg><span>Buscar</span></a>
+    </nav>
+  </div>
+
+  <section class="np" data-np hidden aria-label="Reproduciendo">
+    <div class="np-bg" data-np-bg></div>
+    <div class="np-inner">
+      <button class="np-close icon-btn" data-act="close-np" aria-label="Cerrar"><svg class="i lg"><use href="#i-down"/></svg></button>
+      <div class="np-art"><img alt="" data-np-art><span class="art-ph" data-np-ph></span></div>
+      <div class="np-info">
+        <div class="np-head">
+          <div><div class="np-title" data-np-title></div><a class="np-sub" data-np-sub></a></div>
+          <button class="icon-btn heart" data-act="like-current" aria-label="Favorito"><svg class="i lg"><use href="#i-heart"/></svg></button>
+          <button class="icon-btn" data-act="more-current" aria-label="Más"><svg class="i lg"><use href="#i-more"/></svg></button>
+        </div>
+        <div class="progress np-progress" data-progress></div>
+        <div class="np-times"><span data-cur>0:00</span><span class="np-loopinfo" data-np-loop></span><span data-dur>0:00</span></div>
+        <div class="np-controls">
+          <button class="icon-btn" data-act="shuffle" aria-label="Aleatorio"><svg class="i"><use href="#i-shuffle"/></svg></button>
+          <button class="icon-btn" data-act="prev" aria-label="Anterior"><svg class="i xl"><use href="#i-prev"/></svg></button>
+          <button class="icon-btn play big" data-act="toggle" aria-label="Reproducir"><svg class="i xxl"><use href="#i-play" data-playicon/></svg></button>
+          <button class="icon-btn" data-act="next" aria-label="Siguiente"><svg class="i xl"><use href="#i-next"/></svg></button>
+          <button class="icon-btn" data-act="repeat" aria-label="Repetir"><svg class="i"><use href="#i-repeat" data-repeaticon/></svg></button>
+        </div>
+        <div class="np-ab">
+          <button class="pill" data-act="set-a">A <span data-a-time>—</span></button>
+          <button class="pill" data-act="set-b">B <span data-b-time>—</span></button>
+          <button class="pill" data-act="toggle-loop" data-loop-pill>Bucle</button>
+          <button class="pill ghost" data-act="clear-loop">Quitar</button>
+        </div>
+        <div class="np-bottom">
+          <div class="vol"><svg class="i"><use href="#i-vol"/></svg><input type="range" min="0" max="1" step="0.01" data-vol aria-label="Volumen"></div>
+          <button class="icon-btn" data-act="panel-loop" aria-label="Bucle A-B"><svg class="i"><use href="#i-loop"/></svg></button>
+          <button class="icon-btn" data-act="panel-queue" aria-label="Cola"><svg class="i"><use href="#i-queue"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="menu-layer" data-menu-layer hidden></div>
+  <div class="modal-layer" data-modal-layer hidden></div>
+  <div class="toasts" data-toasts aria-live="polite"></div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4c0 .8.9 1.3 1.6.9l11.3-7.2c.6-.4.6-1.3 0-1.7L8.6 3.9C7.9 3.5 7 4 7 4.8z" fill="currentColor"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4.2" height="16" rx="1.2" fill="currentColor"/><rect x="13.8" y="4" width="4.2" height="16" rx="1.2" fill="currentColor"/></symbol>
+      <symbol id="i-next" viewBox="0 0 24 24"><path d="M3 6.6v10.8c0 .7.8 1.1 1.4.7l8.1-5.4c.5-.4.5-1.1 0-1.4L4.4 5.9C3.8 5.5 3 5.9 3 6.6zm9.5 0v10.8c0 .7.8 1.1 1.4.7l8.1-5.4c.5-.4.5-1.1 0-1.4l-8.1-5.4c-.6-.4-1.4 0-1.4.7z" fill="currentColor"/></symbol>
+      <symbol id="i-prev" viewBox="0 0 24 24"><path d="M21 6.6v10.8c0 .7-.8 1.1-1.4.7l-8.1-5.4c-.5-.4-.5-1.1 0-1.4l8.1-5.4c.6-.4 1.4 0 1.4.7zm-9.5 0v10.8c0 .7-.8 1.1-1.4.7L2 12.7c-.5-.4-.5-1.1 0-1.4l8.1-5.4c.6-.4 1.4 0 1.4.7z" fill="currentColor"/></symbol>
+      <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 7h3.5c2 0 3.3 1 4.4 2.6M3 17h3.5c4.5 0 5.5-10 10.5-10H20M14 15.2c.9 1.1 2 1.8 3.5 1.8H20M18 4.5 20.5 7 18 9.5M18 14.5l2.5 2.5-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 11V9.5A2.5 2.5 0 0 1 6.5 7H19m-3-3 3 3-3 3M20 13v1.5a2.5 2.5 0 0 1-2.5 2.5H5m3 3-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-repeat1" viewBox="0 0 24 24"><path d="M4 11V9.5A2.5 2.5 0 0 1 6.5 7H19m-3-3 3 3-3 3M20 13v1.5a2.5 2.5 0 0 1-2.5 2.5H5m3 3-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><text x="12" y="14.6" font-size="7.5" font-weight="700" text-anchor="middle" fill="currentColor" font-family="system-ui,sans-serif">1</text></symbol>
+      <symbol id="i-loop" viewBox="0 0 24 24"><path d="M7.5 8.5a4.5 4.5 0 1 0 0 7c1.8-1.3 3.2-3 4.5-3.5 1.3.5 2.7 2.2 4.5 3.5a4.5 4.5 0 1 0 0-7c-1.8 1.3-3.2 3-4.5 3.5-1.3-.5-2.7-2.2-4.5-3.5z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+      <symbol id="i-queue" viewBox="0 0 24 24"><path d="M4 6h12M4 11h12M4 16h7m5-1.5V20l4.5-2.8z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+      <symbol id="i-heart-f" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="18.5" cy="12" r="1.8" fill="currentColor"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15 15 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+      <symbol id="i-album" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+      <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 17.5V6l10-2v11.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="6.5" cy="17.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="16.5" cy="15.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9.5 6 5 6-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4h-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-grip" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+</body>
+</html>
